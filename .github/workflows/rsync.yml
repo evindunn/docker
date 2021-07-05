@@ -1,0 +1,30 @@
+name: Build evindunn/rsync
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths: 
+      - ".github/workflows/rsync.yml"
+      - "rsync/**"
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Log in to dockerhub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v2.6.1
+        with:
+          context: rsync/
+          tags: "evindunn/rsync:latest"
+          push: true
+
