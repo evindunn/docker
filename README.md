@@ -1,6 +1,7 @@
 # docker
 DockerHub images for evindunn
 
-- [rsync](./rsync): Busybox with rsync (compiled on debian)
+- [ssh-client](./ssh-client): Busybox with the dropbear ssh client
+- [rsync](./rsync): Busybox with rsync
 
 

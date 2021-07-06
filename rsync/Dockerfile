@@ -1,4 +1,5 @@
-FROM debian:buster-slim as build-stage
+# Rsync build container
+FROM debian:buster-slim as rsync-build
 
 ENV RSYNC_VERSION 3.2.3
 
@@ -36,6 +37,8 @@ RUN mkdir /usr/local/rsync && \
     make && \
     make install
 
+# Main container
+
 FROM busybox:latest
 
-COPY --from=build-stage /usr/local/rsync/bin/rsync /usr/bin/
+COPY --from=rsync-build /usr/local/rsync/bin/rsync /usr/bin/
