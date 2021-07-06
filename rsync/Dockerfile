@@ -39,6 +39,6 @@ RUN mkdir /usr/local/rsync && \
 
 # Main container
 
-FROM busybox:latest
+FROM evindunn/ssh-client:latest
 
 COPY --from=rsync-build /usr/local/rsync/bin/rsync /usr/bin/
