@@ -1,0 +1,14 @@
+---
+
+version: "3.7"
+services:
+  chrony:
+    image: chrony:4.3
+    build: .
+    restart: always
+    volumes: ["chrony:/var/lib/chrony"]
+    ports:
+      - "0.0.0.0:123:123/udp"
+
+volumes:
+  chrony: {}
