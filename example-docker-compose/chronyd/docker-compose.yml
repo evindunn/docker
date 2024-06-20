@@ -6,9 +6,16 @@ services:
     image: chrony:4.3
     build: .
     restart: always
-    volumes: ["chrony:/var/lib/chrony"]
+    volumes: 
+      - "chrony:/var/lib/chrony"
+      - "chrony_tmp:/run/chrony"
     ports:
       - "0.0.0.0:123:123/udp"
 
 volumes:
   chrony: {}
+  chrony_tmp:
+    driver_opts: 
+      type: tmpfs
+      device: tmpfs
+      o: "size=1K,mode=0700,uid=1000,gid=1000"

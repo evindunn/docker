@@ -6,6 +6,8 @@ RUN apt-get update && \
     apt clean all && \
     rm -rf /var/lib/apt/lists/*
 
+RUN groupmod -g 1000 _chrony && usermod -u 1000 _chrony
+
 COPY chrony.conf /etc/chrony/chrony.conf
 COPY ZZ-docker-chronyd.conf /etc/chrony/conf.d/ZZ-docker-chronyd.conf
 
