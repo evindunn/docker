@@ -6,7 +6,7 @@
     cache 3600 . {
         prefetch 100
         serve_stale 86400s immediate
-	disable denial
+	    disable denial
     }
     errors
 }

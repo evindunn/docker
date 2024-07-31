@@ -1,0 +1,26 @@
+name: "Vault Agent"
+description: "Render secrets with vault agent"
+version: "1.0.1"
+slug: "vault_agent"
+init: false
+startup: services
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+map:
+  - "ssl:rw"
+options:
+  vault_server: null
+  vault_auth_role_id: null
+  vault_pki_role: null
+  vault_pki_common_name: null
+  vault_tls_skip_verify: false
+schema:
+  vault_server: str
+  vault_auth_role_id: str
+  vault_pki_role: str
+  vault_pki_common_name: str
+  vault_tls_skip_verify: bool

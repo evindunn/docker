@@ -1,0 +1,11 @@
+---
+
+services:
+  vault-agent:
+    image: "vault-agent:latest"
+    environment:
+      VAULT_SERVER: "https://vault.myhouse.net:8200"
+      APPROLE_ID: "1234"
+      TLS_SKIP_VERIFY: "false"
+      PKI_ROLE: test-myhouse-rol
+      COMMON_NAME: test.myhouse.net

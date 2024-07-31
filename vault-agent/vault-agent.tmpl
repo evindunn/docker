@@ -1,0 +1,39 @@
+pid_file = "/data/vault-agent.pid"
+
+vault {
+  address = "{{ .Env.VAULT_SERVER }}"
+  tls_skip_verify = {{ .Env.TLS_SKIP_VERIFY }}
+}
+
+auto_auth {
+  method {
+    type = "approle"
+
+    config = {
+      role_id_file_path = "/data/approle-id.txt"
+    }
+  }
+}
+
+cache {
+    # Empty cache block still enables caching
+}
+
+template {
+  contents = <<-EOF
+  {{ `{{ with secret "pki/issue/` }}{{ .Env.PKI_ROLE }}{{ `" "common_name=` }}{{ .Env.COMMON_NAME }}{{ `" -}}` }}
+  {{ `{{ .Data.certificate }}` }}
+  {{ `{{ .Data.issuing_ca -}}` }}
+  {{ `{{ end -}}` }}
+  EOF
+  destination = "/secrets/fullchain.pem"
+}
+
+template {
+  contents = <<-EOF
+  {{ `{{ with secret "pki/issue/` }}{{ .Env.PKI_ROLE }}{{ `" "common_name=` }}{{ .Env.COMMON_NAME }}{{ `" -}}` }}
+  {{ `{{ .Data.private_key -}}` }}
+  {{ `{{ end -}}` }}
+  EOF
+  destination = "/secrets/privkey.pem"
+}
