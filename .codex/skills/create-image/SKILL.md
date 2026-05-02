@@ -28,5 +28,6 @@ Use this skill when the user wants a new Docker image added to this repository, 
 - The reusable base workflow lives at [../../../.github/workflows/build-image-base.yml](../../../.github/workflows/build-image-base.yml).
 - Wrapper workflows pass `image`, `tag`, and `context` into the reusable base workflow and inherit repository secrets.
 - The reusable workflow runs `.github/workflows/check_readme_image.py` before `docker build` so undocumented images fail fast.
-- The reusable workflow uses `docker/setup-buildx-action` and a shared auxiliary build context at `./shared`.
+- The reusable workflow uses `docker/setup-qemu-action`, `docker/setup-buildx-action`, and a shared auxiliary build context at `./shared`.
+- The reusable workflow publishes multi-arch images for both `linux/amd64` and `linux/arm64`.
 - The generated workflow builds from the provided context path and pushes `evindunn/<image-slug>`.
