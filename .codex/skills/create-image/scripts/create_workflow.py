@@ -158,6 +158,7 @@ def workflow_support_paths() -> list[str]:
     """Return shared workflow support files that should trigger rebuilds."""
     return [
         '.github/workflows/check_readme_image.py',
+        'shared/**',
     ]
 
 
@@ -232,6 +233,8 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '        with:',
         '          push: true',
         '          context: "${{ steps.vars.outputs.CONTEXT }}"',
+        '          build-contexts: |',
+        '            shared=./shared',
         '          tags: "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"',
         '',
         '      - name: Generate artifact attestation',
