@@ -8,6 +8,7 @@ on:
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
       - 'README.md'
+      - 'shared/**'
   workflow_dispatch: {}
 
 jobs:
@@ -48,6 +49,8 @@ jobs:
         with:
           push: true
           context: "${{ steps.vars.outputs.CONTEXT }}"
+          build-contexts: |
+            shared=./shared
           tags: "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"
 
       - name: Generate artifact attestation

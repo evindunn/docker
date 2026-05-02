@@ -7,6 +7,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt install -y \
 	ca-certificates
 
-COPY localdomain.net.crt /usr/local/share/ca-certificates/
+COPY --from=shared localdomain.net.crt /usr/local/share/ca-certificates/
 
 RUN update-ca-certificates
