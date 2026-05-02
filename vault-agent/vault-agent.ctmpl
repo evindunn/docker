@@ -1,0 +1,29 @@
+pid_file = "/data/vault-agent.pid"
+
+auto_auth {
+  method {
+    type = "approle"
+
+    config = {
+      role_id_file_path = "/data/.approle-id"
+    }
+  }
+}
+
+cache {
+  # Empty cache block still enables caching
+}
+
+template {
+  source        = "/tls-pair.tmpl"
+  destination   = "/tmp/null"
+<%- if ne (env.Getenv "CERT_TEMPLATE_EXEC" "") "" %>
+  exec          = { 
+    command = [
+      "/bin/bash", 
+      "-c", 
+      "<% .Env.CERT_TEMPLATE_EXEC %>"
+    ]
+  }
+<%- end %>
+}

@@ -1,0 +1,36 @@
+name: build evindunn/debian:trixie-slim
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/check_readme_image.py'
+      - '.github/workflows/debian-trixie-slim.yml'
+      - 'debian-trixie-slim/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-image:
+    runs-on: dind
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set image variables
+        id: vars
+        run: echo "IMAGE=evindunn/debian:trixie-slim" >> "$GITHUB_OUTPUT"
+
+      - name: Verify README entry
+        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t "${{ steps.vars.outputs.IMAGE }}" .
+
+      - name: Push Docker image
+        run: docker push "${{ steps.vars.outputs.IMAGE }}"

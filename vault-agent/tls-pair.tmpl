@@ -1,0 +1,11 @@
+{{ with pkiCert
+    (print "pki/issue/" (env "CERT_PKI_ROLE"))
+    (print "common_name=" (env "CERT_COMMON_NAME"))
+    (print "alt_names=" (env "CERT_ALT_NAMES"))
+    (print "ip_sans=" (env "CERT_IP_SANS"))
+}}
+{{ .Key  | writeToFile "/secrets/cert.key"  "vault-agent" "vault-agent" "0644" }}
+{{ .CA | writeToFile "/secrets/ca.crt"  "vault-agent" "vault-agent" "0644" }}
+{{ .Cert | writeToFile "/secrets/cert.crt"  "vault-agent" "vault-agent" "0644" }}
+{{ .CA   | writeToFile "/secrets/cert.crt"  "vault-agent" "vault-agent" "0644" "append" }}
+{{ end }}
