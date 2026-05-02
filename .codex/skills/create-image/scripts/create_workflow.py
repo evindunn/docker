@@ -171,9 +171,7 @@ def render_workflow(image_slug: str, build_context: str) -> str:
     """
     workflow_file = workflow_filename(build_context)
     image_name = full_image_name(image_slug)
-    image_repository, image_tag = split_image_slug(image_slug)
-    image_base = f'{DEFAULT_DOCKERHUB_NAMESPACE}/{image_repository}'
-    dockerfile_path = './Dockerfile' if build_context == '.' else f'./{build_context}/Dockerfile'
+    image_base, image_tag = split_image_slug(image_name)
     lines = [
         f'name: {workflow_name(image_slug)}',
         '',
@@ -183,7 +181,14 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '    paths:',
     ]
 
-    for path_filter in [f'.github/workflows/{workflow_file}', *workflow_support_paths(), build_context_path_filter(build_context)]:
+    path_filters = [
+        *workflow_support_paths(),
+        f'.github/workflows/{workflow_file}',
+        build_context_path_filter(build_context),
+        'README.md',
+    ]
+
+    for path_filter in path_filters:
         lines.append(f"      - '{path_filter}'")
 
     lines.extend([
@@ -204,38 +209,35 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '',
         '      - name: Set image variables',
         '        id: vars',
-        f'        run: echo "IMAGE={image_name}" >> "$GITHUB_OUTPUT"',
+        '        run: |',
+        f'          echo "IMAGE={image_base}" >> "$GITHUB_OUTPUT"',
+        f'          echo "TAG={image_tag}" >> "$GITHUB_OUTPUT"',
+        f'          echo "CONTEXT={build_context}" >> "$GITHUB_OUTPUT"',
         '',
         '      - name: Verify README entry',
-        '        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}"',
+        '        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"',
         '',
         '      - name: Log in to Docker Hub',
-        '        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a',
+        '        uses: docker/login-action@v4',
         '        with:',
         '          username: ${{ secrets.REGISTRY_USER }}',
         '          password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}',
         '',
-        '      - name: Extract metadata (tags, labels) for Docker',
-        '        id: meta',
-        '        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7',
-        '        with:',
-        f'          images: {image_base}',
-        f'          tags: type=raw,value={image_tag}',
+        '      - name: Set up Docker Buildx',
+        '        uses: docker/setup-buildx-action@v4',
         '',
         '      - name: Build and push Docker image',
         '        id: push',
-        '        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671',
+        '        uses: docker/build-push-action@v7',
         '        with:',
-        f'          context: {build_context}',
-        f'          file: {dockerfile_path}',
         '          push: true',
-        '          tags: ${{ steps.meta.outputs.tags }}',
-        '          labels: ${{ steps.meta.outputs.labels }}',
+        '          context: "${{ steps.vars.outputs.CONTEXT }}"',
+        '          tags: "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"',
         '',
         '      - name: Generate artifact attestation',
         '        uses: actions/attest@v4',
         '        with:',
-        f'          subject-name: index.docker.io/{image_base}',
+        '          subject-name: index.docker.io/${{ steps.vars.outputs.IMAGE }}',
         '          subject-digest: ${{ steps.push.outputs.digest }}',
         '          push-to-registry: true',
         '',

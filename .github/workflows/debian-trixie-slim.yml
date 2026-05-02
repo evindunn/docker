@@ -7,6 +7,7 @@ on:
       - '.github/workflows/check_readme_image.py'
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
+      - 'README.md'
   workflow_dispatch: {}
 
 jobs:
@@ -24,37 +25,34 @@ jobs:
 
       - name: Set image variables
         id: vars
-        run: echo "IMAGE=evindunn/debian:trixie-slim" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "IMAGE=evindunn/debian" >> "$GITHUB_OUTPUT"
+          echo "TAG=trixie-slim" >> "$GITHUB_OUTPUT"
+          echo "CONTEXT=debian-trixie-slim" >> "$GITHUB_OUTPUT"
 
       - name: Verify README entry
-        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}"
+        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.REGISTRY_USER }}
           password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-        with:
-          images: evindunn/debian
-          tags: type=raw,value=trixie-slim
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push Docker image
         id: push
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        uses: docker/build-push-action@v7
         with:
-          context: debian-trixie-slim
-          file: ./debian-trixie-slim/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          context: "${{ steps.vars.outputs.CONTEXT }}"
+          tags: "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"
 
       - name: Generate artifact attestation
         uses: actions/attest@v4
         with:
-          subject-name: index.docker.io/evindunn/debian
+          subject-name: index.docker.io/${{ steps.vars.outputs.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
