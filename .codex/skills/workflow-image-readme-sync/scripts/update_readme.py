@@ -2,6 +2,7 @@
 """Update README.md with Docker images discovered in workflow files."""
 
 import dataclasses
+import json
 import pathlib
 import re
 import sys
@@ -23,10 +24,9 @@ DOCKERFILE_FROM_PATTERN = re.compile(
     r'^\s*FROM\s+(?P<image>[^\s]+)',
     re.IGNORECASE | re.MULTILINE,
 )
-INSTALL_PACKAGES_PATTERN = re.compile(
-    r'apt(?:-get)?\s+install\s+-y\s+(?P<packages>.+?)(?:\n\s*(?:&&|RUN|COPY|FROM)\b|$)',
-    re.IGNORECASE | re.DOTALL,
-)
+DOWNLOAD_BINARY_PATTERN = re.compile(r'(?P<path>/[A-Za-z0-9._/-]+)', re.IGNORECASE)
+ENTRYPOINT_PATTERN = re.compile(r'^\s*ENTRYPOINT\s+\[(?P<entrypoint>[^\]]+)\]', re.MULTILINE)
+USER_PATTERN = re.compile(r'^\s*USER\s+(?P<user>[A-Za-z0-9._-]+)\s*$', re.MULTILINE)
 WORKFLOW_IMAGE_PATTERNS = (
     re.compile(r'IMAGE\s*=\s*(?P<image>[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)'),
     re.compile(
@@ -61,6 +61,28 @@ class ImageRecord:
     description: str
 
 
+def parse_args() -> tuple[pathlib.Path | None, bool]:
+    """Parse command-line arguments."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Discover Docker images from workflows and render the README table.',
+    )
+    parser.add_argument(
+        '--description-file',
+        help='JSON file mapping full image names to human-written descriptions.',
+    )
+    parser.add_argument(
+        '--print-discovery-json',
+        action='store_true',
+        help='Print discovered image metadata as JSON instead of updating README.md.',
+    )
+    args = parser.parse_args()
+
+    description_path = None if args.description_file is None else pathlib.Path(args.description_file)
+    return description_path, args.print_discovery_json
+
+
 def discover_images(repo_root: pathlib.Path) -> list[ImageRecord]:
     """Return discovered Docker images with inferred metadata."""
     images: dict[str, ImageRecord] = {}
@@ -72,7 +94,7 @@ def discover_images(repo_root: pathlib.Path) -> list[ImageRecord]:
         for image in extract_images(workflow_text):
             images.setdefault(
                 image,
-                build_image_record(repo_root, workflow_path, context_dir, image),
+                build_image_record(repo_root, workflow_path, context_dir, image, None),
             )
 
     return sorted(images.values(), key=lambda record: record.image)
@@ -159,6 +181,7 @@ def build_image_record(
     workflow_path: pathlib.Path,
     context_dir: pathlib.Path | None,
     image: str,
+    description: str | None,
 ) -> ImageRecord:
     """
     Build metadata for a discovered image.
@@ -173,29 +196,22 @@ def build_image_record(
     dockerfile_path = None if context_dir is None else context_dir / 'Dockerfile'
     base_image = 'Unknown'
     context_name = 'Unknown'
-    description = 'Docker image published by this repository.'
+    image_description = default_description(context_dir)
 
     if dockerfile_path is not None and dockerfile_path.is_file():
         dockerfile_text = dockerfile_path.read_text(encoding='utf-8')
         base_image = infer_base_image(dockerfile_text)
         context_name = context_dir.relative_to(repo_root).as_posix()
-        description = infer_description(
-            repo_root=repo_root,
-            context_dir=context_dir,
-            dockerfile_text=dockerfile_text,
-        )
     elif context_dir is not None and context_dir.is_dir():
         context_name = context_dir.relative_to(repo_root).as_posix()
-        description = 'Docker image published by this repository.'
 
     return ImageRecord(
         image=image,
         base_image=base_image,
         context=context_name,
         workflow=workflow_name,
-        description=description,
+        description=image_description if description is None else description,
     )
-
 
 def infer_base_image(dockerfile_text: str) -> str:
     """Infer the base image from a Dockerfile."""
@@ -206,73 +222,12 @@ def infer_base_image(dockerfile_text: str) -> str:
     return match.group('image')
 
 
-def infer_description(
-    repo_root: pathlib.Path,
-    context_dir: pathlib.Path,
-    dockerfile_text: str,
-) -> str:
-    """
-    Infer a human-readable description from the build context.
+def default_description(context_dir: pathlib.Path | None) -> str:
+    """Return a placeholder description for agent-first authoring."""
+    if context_dir is None:
+        return 'TODO: add description'
 
-    :param repo_root: Repository root path.
-    :param context_dir: Build context directory.
-    :param dockerfile_text: Dockerfile contents.
-    :returns: Human-readable description for README.md.
-    """
-    packages = infer_installed_packages(dockerfile_text)
-    copied_certificates = infer_copied_certificates(dockerfile_text)
-    description_parts: list[str] = []
-
-    if packages:
-        description_parts.append(f'adds `{", ".join(packages)}`')
-
-    if copied_certificates:
-        certificate_phrase = 'certificate' if len(copied_certificates) == 1 else 'certificates'
-        description_parts.append(
-            f'installs local CA {certificate_phrase} from `{", ".join(copied_certificates)}`'
-        )
-
-    if not description_parts:
-        return 'Docker image published by this repository.'
-
-    return f'Docker image that {join_description_parts(description_parts)}.'
-
-
-def infer_installed_packages(dockerfile_text: str) -> list[str]:
-    """Infer installed APT packages from a Dockerfile."""
-    packages: list[str] = []
-
-    for match in INSTALL_PACKAGES_PATTERN.finditer(dockerfile_text):
-        raw_packages = match.group('packages')
-        for token in raw_packages.replace('\\', ' ').split():
-            if token.startswith('-'):
-                continue
-            if token in {'&&', 'apt', 'apt-get', 'install', 'RUN'}:
-                continue
-            if token not in packages:
-                packages.append(token)
-
-    return packages
-
-
-def infer_copied_certificates(dockerfile_text: str) -> list[str]:
-    """Infer copied certificate files from a Dockerfile."""
-    certificates: list[str] = []
-
-    for match in COPY_CERTIFICATE_PATTERN.finditer(dockerfile_text):
-        certificate_path = pathlib.Path(match.group(1)).name
-        if certificate_path not in certificates:
-            certificates.append(certificate_path)
-
-    return certificates
-
-
-def join_description_parts(description_parts: list[str]) -> str:
-    """Join description fragments into a readable English phrase."""
-    if len(description_parts) == 1:
-        return description_parts[0]
-
-    return f'{", ".join(description_parts[:-1])}, and {description_parts[-1]}'
+    return f'TODO: add description for {context_dir.name}'
 
 
 def dockerhub_url(image: str) -> str:
@@ -295,6 +250,35 @@ def render_workflow(workflow: str) -> str:
         return workflow
 
     return f'[{workflow}]({workflow})'
+
+
+def image_record_to_dict(image_record: ImageRecord) -> dict[str, str]:
+    """Convert an image record into a JSON-serializable dictionary."""
+    return {
+        'image': image_record.image,
+        'base_image': image_record.base_image,
+        'context': image_record.context,
+        'workflow': image_record.workflow,
+        'description': image_record.description,
+    }
+
+
+def load_descriptions(description_path: pathlib.Path | None) -> dict[str, str]:
+    """Load image descriptions from a JSON file."""
+    if description_path is None:
+        return {}
+
+    description_data = json.loads(description_path.read_text(encoding='utf-8'))
+    if not isinstance(description_data, dict):
+        raise ValueError('description file must contain a JSON object')
+
+    descriptions: dict[str, str] = {}
+    for image, description in description_data.items():
+        if not isinstance(image, str) or not isinstance(description, str):
+            raise ValueError('description file entries must map strings to strings')
+        descriptions[image] = description
+
+    return descriptions
 
 
 def render_table(images: list[ImageRecord]) -> str:
@@ -344,9 +328,18 @@ def update_readme(repo_root: pathlib.Path, table: str) -> None:
 def main() -> int:
     """Run the README synchronization workflow."""
     repo_root = pathlib.Path(__file__).resolve().parents[4]
+    description_path, print_discovery_json = parse_args()
 
     try:
         images = discover_images(repo_root)
+        descriptions = load_descriptions(description_path)
+        images = [
+            dataclasses.replace(image_record, description=descriptions.get(image_record.image, image_record.description))
+            for image_record in images
+        ]
+        if print_discovery_json:
+            print(json.dumps([image_record_to_dict(image_record) for image_record in images], indent=2))
+            return 0
         table = render_table(images)
         update_readme(repo_root, table)
     except Exception as exc:  # pragma: no cover - CLI error path

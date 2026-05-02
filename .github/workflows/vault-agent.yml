@@ -1,0 +1,22 @@
+name: build evindunn/vault-agent:latest
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-image-base.yml'
+      - '.github/workflows/check_readme_image.py'
+      - 'shared/**'
+      - '.github/workflows/vault-agent.yml'
+      - 'vault-agent/**'
+      - 'README.md'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-image-base.yml
+    with:
+      image: evindunn/vault-agent
+      tag: latest
+      context: vault-agent
+    secrets: inherit

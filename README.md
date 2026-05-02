@@ -6,7 +6,8 @@ personal projects.
 <!-- docker-images-table:start -->
 | Image | Base Image | Context | Workflow | Description |
 | --- | --- | --- | --- | --- |
-| [`evindunn/debian:trixie-slim`](https://hub.docker.com/r/evindunn/debian) | `debian:trixie-slim` | [debian-trixie-slim](debian-trixie-slim) | [.github/workflows/debian-trixie-slim.yml](.github/workflows/debian-trixie-slim.yml) | Docker image that adds `ca-certificates`, and installs local CA certificate from `--from=shared localdomain.net.crt`. |
+| [`evindunn/debian:trixie-slim`](https://hub.docker.com/r/evindunn/debian) | `debian:trixie-slim` | [debian-trixie-slim](debian-trixie-slim) | [.github/workflows/debian-trixie-slim.yml](.github/workflows/debian-trixie-slim.yml) | Debian base image with custom ca certs |
+| [`evindunn/vault-agent:latest`](https://hub.docker.com/r/evindunn/vault-agent) | `evindunn/debian:trixie-slim` | [vault-agent](vault-agent) | [.github/workflows/vault-agent.yml](.github/workflows/vault-agent.yml) | Vault running in agent mode with config templating |
 <!-- docker-images-table:end -->
 
 ## Skills

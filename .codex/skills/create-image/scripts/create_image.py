@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--image-slug',
         required=True,
-        help='Image slug to publish under the default Docker Hub namespace, for example debian:trixie-slim.',
+        help='Image slug to publish, for example debian:trixie-slim or evindunn/debian:trixie-slim.',
     )
     parser.add_argument(
         '--build-context',
@@ -48,12 +48,15 @@ def validate_image_slug(image_slug: str) -> None:
     """
     Validate the Docker image slug format.
 
-    :param image_slug: Image slug without the namespace prefix.
+    :param image_slug: Image slug, with or without the namespace prefix.
     :raises ValueError: If the slug contains unsupported characters.
     """
-    if not re.fullmatch(r'[a-z0-9]+(?:[._-][a-z0-9]+)*(?::[A-Za-z0-9._-]+)?', image_slug):
+    if not re.fullmatch(
+        r'(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)?[a-z0-9]+(?:[._-][a-z0-9]+)*(?::[A-Za-z0-9._-]+)?',
+        image_slug,
+    ):
         raise ValueError(
-            'image slug must look like "name" or "name:tag" and use Docker-safe characters',
+            'image slug must look like "name", "name:tag", or "namespace/name:tag" and use Docker-safe characters',
         )
 
 
@@ -80,7 +83,7 @@ def scaffold_dockerfile(image_slug: str) -> str:
     """
     Return starter Dockerfile contents for a missing build context.
 
-    :param image_slug: Docker image slug without the namespace prefix.
+    :param image_slug: Docker image reference to use in the starter Dockerfile.
     :returns: Starter Dockerfile contents.
     """
     return f'FROM {image_slug}\n'
@@ -91,7 +94,7 @@ def ensure_build_context(context_path: pathlib.Path, image_slug: str) -> list[st
     Ensure the build context directory and Dockerfile exist.
 
     :param context_path: Absolute build context path.
-    :param image_slug: Docker image slug without the namespace prefix.
+    :param image_slug: Docker image reference to use when scaffolding a Dockerfile.
     :returns: Descriptions of any files or directories created.
     :raises ValueError: If the existing path layout is incompatible.
     """
@@ -125,6 +128,9 @@ def workflow_filename(build_context: str) -> str:
 
 def full_image_name(image_slug: str) -> str:
     """Return the published Docker image name."""
+    if '/' in image_slug.split(':', maxsplit=1)[0]:
+        return image_slug
+
     return f'{DEFAULT_DOCKERHUB_NAMESPACE}/{image_slug}'
 
 
@@ -132,7 +138,7 @@ def split_image_slug(image_slug: str) -> tuple[str, str]:
     """
     Split an image slug into repository and tag components.
 
-    :param image_slug: Docker image slug without the namespace prefix.
+    :param image_slug: Fully qualified Docker image reference.
     :returns: Repository name and tag.
     """
     if ':' in image_slug:
