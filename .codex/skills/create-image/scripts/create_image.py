@@ -238,8 +238,11 @@ def main() -> int:
     try:
         validate_image_slug(image_slug)
         context_path = resolve_build_context(repo_root, build_context)
-        created = ensure_build_context(context_path, image_slug)
         workflow_text = render_workflow(image_slug, build_context)
+        if args.dry_run:
+            created = []
+        else:
+            created = ensure_build_context(context_path, image_slug)
     except ValueError as exc:
         print(f'error: {exc}', file=sys.stderr)
         return 1
