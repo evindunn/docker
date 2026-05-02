@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a GitHub Actions workflow for building and pushing a Docker image."""
+"""Create a Docker image scaffold and wrapper workflow for this repository."""
 
 import argparse
 import pathlib
@@ -14,7 +14,7 @@ WORKFLOW_DIR = pathlib.Path('.github/workflows')
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description='Create a Docker image build workflow for this repository.',
+        description='Create a Docker image scaffold and workflow for this repository.',
     )
     parser.add_argument(
         '--image-slug',
@@ -146,6 +146,7 @@ def workflow_name(image_slug: str) -> str:
     """Return the workflow display name."""
     return f'build {full_image_name(image_slug)}'
 
+
 def build_context_path_filter(build_context: str) -> str:
     """Return the GitHub Actions path filter for the build context."""
     if build_context == '.':
@@ -157,6 +158,7 @@ def build_context_path_filter(build_context: str) -> str:
 def workflow_support_paths() -> list[str]:
     """Return shared workflow support files that should trigger rebuilds."""
     return [
+        '.github/workflows/build-image-base.yml',
         '.github/workflows/check_readme_image.py',
         'shared/**',
     ]
@@ -196,54 +198,13 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '  workflow_dispatch: {}',
         '',
         'jobs:',
-        '  push_to_registry:',
-        '    name: Push Docker image to Docker Hub',
-        '    runs-on: ubuntu-latest',
-        '    permissions:',
-        '      contents: read',
-        '      packages: write',
-        '      attestations: write',
-        '      id-token: write',
-        '    steps:',
-        '      - name: Check out the repo',
-        '        uses: actions/checkout@v6',
-        '',
-        '      - name: Set image variables',
-        '        id: vars',
-        '        run: |',
-        f'          echo "IMAGE={image_base}" >> "$GITHUB_OUTPUT"',
-        f'          echo "TAG={image_tag}" >> "$GITHUB_OUTPUT"',
-        f'          echo "CONTEXT={build_context}" >> "$GITHUB_OUTPUT"',
-        '',
-        '      - name: Verify README entry',
-        '        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"',
-        '',
-        '      - name: Log in to Docker Hub',
-        '        uses: docker/login-action@v4',
-        '        with:',
-        '          username: ${{ secrets.REGISTRY_USER }}',
-        '          password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}',
-        '',
-        '      - name: Set up Docker Buildx',
-        '        uses: docker/setup-buildx-action@v4',
-        '',
-        '      - name: Build and push Docker image',
-        '        id: push',
-        '        uses: docker/build-push-action@v7',
-        '        with:',
-        '          push: true',
-        '          context: "${{ steps.vars.outputs.CONTEXT }}"',
-        '          build-contexts: |',
-        '            shared=./shared',
-        '          tags: "${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}"',
-        '',
-        '      - name: Generate artifact attestation',
-        '        uses: actions/attest@v4',
-        '        with:',
-        '          subject-name: index.docker.io/${{ steps.vars.outputs.IMAGE }}',
-        '          subject-digest: ${{ steps.push.outputs.digest }}',
-        '          push-to-registry: true',
-        '',
+        '  build:',
+        '    uses: ./.github/workflows/build-image-base.yml',
+        '    with:',
+        f'      image: {image_base}',
+        f'      tag: {image_tag}',
+        f'      context: {build_context}',
+        '    secrets: inherit',
     ])
     return '\n'.join(lines)
 
@@ -263,7 +224,7 @@ def write_workflow(repo_root: pathlib.Path, build_context: str, workflow_text: s
 
 
 def main() -> int:
-    """Create a workflow file from the provided inputs."""
+    """Create a Docker image scaffold and workflow from the provided inputs."""
     args = parse_args()
     repo_root = pathlib.Path(__file__).resolve().parents[4]
     image_slug = args.image_slug.strip()

@@ -6,7 +6,7 @@ personal projects.
 <!-- docker-images-table:start -->
 | Image | Base Image | Context | Workflow | Description |
 | --- | --- | --- | --- | --- |
-| [`evindunn/debian:trixie-slim`](https://hub.docker.com/r/evindunn/debian) | `debian:trixie-slim` | [debian-trixie-slim](debian-trixie-slim) | [.github/workflows/debian-trixie-slim.yml](.github/workflows/debian-trixie-slim.yml) | Docker image that adds `ca-certificates`, and installs local CA certificate from `localdomain.net.crt`. |
+| [`evindunn/debian:trixie-slim`](https://hub.docker.com/r/evindunn/debian) | `debian:trixie-slim` | [debian-trixie-slim](debian-trixie-slim) | [.github/workflows/debian-trixie-slim.yml](.github/workflows/debian-trixie-slim.yml) | Docker image that adds `ca-certificates`, and installs local CA certificate from `--from=shared localdomain.net.crt`. |
 <!-- docker-images-table:end -->
 
 ## Skills
@@ -23,13 +23,13 @@ starter `Dockerfile` when either is missing.
 Invoke it by asking Codex to use `create-image`, or run:
 
 ```sh
-python3 .codex/skills/create-image/scripts/create_workflow.py --image-slug '<slug>' --build-context '<context>'
+python3 .codex/skills/create-image/scripts/create_image.py --image-slug '<slug>' --build-context '<context>'
 ```
 
 Example:
 
 ```sh
-python3 .codex/skills/create-image/scripts/create_workflow.py --image-slug 'debian:trixie-slim' --build-context 'debian-trixie-slim'
+python3 .codex/skills/create-image/scripts/create_image.py --image-slug 'debian:trixie-slim' --build-context 'debian-trixie-slim'
 ```
 
 ### [workflow-image-readme-sync](.codex/skills/workflow-image-readme-sync/SKILL.md)

@@ -17,6 +17,7 @@ BUILD_CONTEXT_PATTERN = re.compile(
     re.MULTILINE,
 )
 BUILD_PUSH_CONTEXT_PATTERN = re.compile(r'^\s*context:\s*(?P<context>[A-Za-z0-9._/-]+)\s*$', re.MULTILINE)
+WORKFLOW_INPUT_CONTEXT_PATTERN = re.compile(r'^\s*context:\s*(?P<context>[A-Za-z0-9._/-]+)\s*$', re.MULTILINE)
 COPY_CERTIFICATE_PATTERN = re.compile(r'COPY\s+([^\n]+\.crt)\b', re.IGNORECASE)
 DOCKERFILE_FROM_PATTERN = re.compile(
     r'^\s*FROM\s+(?P<image>[^\s]+)',
@@ -28,6 +29,10 @@ INSTALL_PACKAGES_PATTERN = re.compile(
 )
 WORKFLOW_IMAGE_PATTERNS = (
     re.compile(r'IMAGE\s*=\s*(?P<image>[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)'),
+    re.compile(
+        r'^\s*image:\s*(?P<repository>[A-Za-z0-9._/-]+)\s*$\n^\s*tag:\s*(?P<tag>[A-Za-z0-9._-]+)\s*$',
+        re.MULTILINE,
+    ),
     re.compile(
         r'images:\s*(?P<repository>[A-Za-z0-9._/-]+)\s*\n\s*tags:\s*type=raw,value=(?P<tag>[A-Za-z0-9._-]+)',
         re.MULTILINE,
@@ -127,6 +132,16 @@ def resolve_context_dir(
             return context_path
 
     match = BUILD_PUSH_CONTEXT_PATTERN.search(workflow_text)
+    if match:
+        context_value = match.group('context')
+        if context_value == '.':
+            return repo_root
+
+        context_path = (repo_root / context_value).resolve()
+        if context_path.is_dir():
+            return context_path
+
+    match = WORKFLOW_INPUT_CONTEXT_PATTERN.search(workflow_text)
     if match:
         context_value = match.group('context')
         if context_value == '.':
