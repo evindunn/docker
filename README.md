@@ -1,5 +1,9 @@
 # Docker Images
 
+[![Debian Trixie Slim Build](https://github.com/evindunn/docker/actions/workflows/debian-trixie-slim.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/debian-trixie-slim.yml)
+[![Vault Agent Build](https://github.com/evindunn/docker/actions/workflows/vault-agent.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/vault-agent.yml)
+[![Chronyd Build](https://github.com/evindunn/docker/actions/workflows/chronyd.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/chronyd.yml)
+
 This repository contains the docker base images I use in my homelab and other
 personal projects.
 

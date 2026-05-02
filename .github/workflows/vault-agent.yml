@@ -9,7 +9,6 @@ on:
       - 'shared/**'
       - '.github/workflows/vault-agent.yml'
       - 'vault-agent/**'
-      - 'README.md'
   workflow_dispatch: {}
 
 jobs:

@@ -8,7 +8,6 @@ on:
       - '.github/workflows/check_readme_image.py'
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
-      - 'README.md'
       - 'shared/**'
   workflow_dispatch: {}
 

@@ -194,7 +194,6 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         *workflow_support_paths(),
         f'.github/workflows/{workflow_file}',
         build_context_path_filter(build_context),
-        'README.md',
     ]
 
     for path_filter in path_filters:

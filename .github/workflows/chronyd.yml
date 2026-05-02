@@ -9,7 +9,6 @@ on:
       - 'shared/**'
       - '.github/workflows/chronyd.yml'
       - 'chronyd/**'
-      - 'README.md'
   workflow_dispatch: {}
 
 jobs:

@@ -18,7 +18,7 @@ Use this skill when the user wants a new Docker image added to this repository, 
 2. If the build context directory does not exist, let the generator create it.
 3. If the build context does not contain a `Dockerfile`, let the generator scaffold one with `FROM <image-slug>`.
 4. Review the generated wrapper workflow under [../../../.github/workflows](../../../.github/workflows) and make sure it passes `image`, `tag`, and `context` into the reusable base workflow.
-5. Make sure the `paths` filters include the workflow file, the reusable base workflow, the shared README check script, the build context, [../../../README.md](../../../README.md), and shared assets under [../../../shared](../../../shared).
+5. Make sure the `paths` filters include the workflow file, the reusable base workflow, the shared README check script, the build context, and shared assets under [../../../shared](../../../shared).
 
 ## Notes
 
