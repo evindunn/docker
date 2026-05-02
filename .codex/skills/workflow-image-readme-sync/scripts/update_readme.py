@@ -16,6 +16,7 @@ BUILD_CONTEXT_PATTERN = re.compile(
     r'docker\s+build(?:x)?(?:\s+[^\n]*)?\s+(?P<context>\.[A-Za-z0-9._/-]*|[A-Za-z0-9._/-]+)\s*$',
     re.MULTILINE,
 )
+BUILD_PUSH_CONTEXT_PATTERN = re.compile(r'^\s*context:\s*(?P<context>[A-Za-z0-9._/-]+)\s*$', re.MULTILINE)
 COPY_CERTIFICATE_PATTERN = re.compile(r'COPY\s+([^\n]+\.crt)\b', re.IGNORECASE)
 DOCKERFILE_FROM_PATTERN = re.compile(
     r'^\s*FROM\s+(?P<image>[^\s]+)',
@@ -27,6 +28,10 @@ INSTALL_PACKAGES_PATTERN = re.compile(
 )
 WORKFLOW_IMAGE_PATTERNS = (
     re.compile(r'IMAGE\s*=\s*(?P<image>[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)'),
+    re.compile(
+        r'images:\s*(?P<repository>[A-Za-z0-9._/-]+)\s*\n\s*tags:\s*type=raw,value=(?P<tag>[A-Za-z0-9._-]+)',
+        re.MULTILINE,
+    ),
     re.compile(r'docker\s+build(?:x)?(?:\s+[^\n]*)?\s+-t\s+(?P<image>[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)'),
     re.compile(r'docker\s+push\s+(?P<image>[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)'),
 )
@@ -84,7 +89,10 @@ def extract_images(workflow_text: str) -> list[str]:
 
     for pattern in WORKFLOW_IMAGE_PATTERNS:
         for match in pattern.finditer(workflow_text):
-            image = match.group('image')
+            if 'image' in match.groupdict():
+                image = match.group('image')
+            else:
+                image = f"{match.group('repository')}:{match.group('tag')}"
             if image not in images:
                 images.append(image)
 
@@ -109,6 +117,16 @@ def resolve_context_dir(
         return workflow_stem_dir
 
     match = BUILD_CONTEXT_PATTERN.search(workflow_text)
+    if match:
+        context_value = match.group('context')
+        if context_value == '.':
+            return repo_root
+
+        context_path = (repo_root / context_value).resolve()
+        if context_path.is_dir():
+            return context_path
+
+    match = BUILD_PUSH_CONTEXT_PATTERN.search(workflow_text)
     if match:
         context_value = match.group('context')
         if context_value == '.':

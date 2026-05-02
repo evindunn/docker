@@ -128,6 +128,20 @@ def full_image_name(image_slug: str) -> str:
     return f'{DEFAULT_DOCKERHUB_NAMESPACE}/{image_slug}'
 
 
+def split_image_slug(image_slug: str) -> tuple[str, str]:
+    """
+    Split an image slug into repository and tag components.
+
+    :param image_slug: Docker image slug without the namespace prefix.
+    :returns: Repository name and tag.
+    """
+    if ':' in image_slug:
+        repository, tag = image_slug.split(':', maxsplit=1)
+        return repository, tag
+
+    return image_slug, 'latest'
+
+
 def workflow_name(image_slug: str) -> str:
     """Return the workflow display name."""
     return f'build {full_image_name(image_slug)}'
@@ -157,6 +171,9 @@ def render_workflow(image_slug: str, build_context: str) -> str:
     """
     workflow_file = workflow_filename(build_context)
     image_name = full_image_name(image_slug)
+    image_repository, image_tag = split_image_slug(image_slug)
+    image_base = f'{DEFAULT_DOCKERHUB_NAMESPACE}/{image_repository}'
+    dockerfile_path = './Dockerfile' if build_context == '.' else f'./{build_context}/Dockerfile'
     lines = [
         f'name: {workflow_name(image_slug)}',
         '',
@@ -173,11 +190,17 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '  workflow_dispatch: {}',
         '',
         'jobs:',
-        '  build-image:',
-        '    runs-on: dind',
+        '  push_to_registry:',
+        '    name: Push Docker image to Docker Hub',
+        '    runs-on: ubuntu-latest',
+        '    permissions:',
+        '      contents: read',
+        '      packages: write',
+        '      attestations: write',
+        '      id-token: write',
         '    steps:',
-        '      - name: Checkout source',
-        '        uses: actions/checkout@v4',
+        '      - name: Check out the repo',
+        '        uses: actions/checkout@v6',
         '',
         '      - name: Set image variables',
         '        id: vars',
@@ -186,17 +209,35 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '      - name: Verify README entry',
         '        run: python3 .github/workflows/check_readme_image.py --image "${{ steps.vars.outputs.IMAGE }}"',
         '',
-        '      - name: Login to Docker Hub',
-        '        uses: docker/login-action@v3',
+        '      - name: Log in to Docker Hub',
+        '        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a',
         '        with:',
         '          username: ${{ secrets.REGISTRY_USER }}',
         '          password: ${{ secrets.REGISTRY_ACCESS_TOKEN }}',
         '',
-        '      - name: Build Docker image',
-        f'        run: docker build -t "${{{{ steps.vars.outputs.IMAGE }}}}" "{build_context}"',
+        '      - name: Extract metadata (tags, labels) for Docker',
+        '        id: meta',
+        '        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7',
+        '        with:',
+        f'          images: {image_base}',
+        f'          tags: type=raw,value={image_tag}',
         '',
-        '      - name: Push Docker image',
-        '        run: docker push "${{ steps.vars.outputs.IMAGE }}"',
+        '      - name: Build and push Docker image',
+        '        id: push',
+        '        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671',
+        '        with:',
+        f'          context: {build_context}',
+        f'          file: {dockerfile_path}',
+        '          push: true',
+        '          tags: ${{ steps.meta.outputs.tags }}',
+        '          labels: ${{ steps.meta.outputs.labels }}',
+        '',
+        '      - name: Generate artifact attestation',
+        '        uses: actions/attest@v4',
+        '        with:',
+        f'          subject-name: index.docker.io/{image_base}',
+        '          subject-digest: ${{ steps.push.outputs.digest }}',
+        '          push-to-registry: true',
         '',
     ])
     return '\n'.join(lines)
