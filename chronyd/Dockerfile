@@ -1,8 +1,8 @@
-FROM debian:bookworm-slim
+FROM evindunn/debian:trixie-slim
 
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt install -y chrony=4.3-2+deb12u1 && \
+    apt install -y chrony=4.6.1-3+deb13u1 && \
     apt clean all && \
     rm -rf /var/lib/apt/lists/*
 
