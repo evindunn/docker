@@ -5,9 +5,11 @@ import dataclasses
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 
+DEFAULT_GITHUB_REPOSITORY = 'evindunn/docker'
 README_PATH = pathlib.Path('README.md')
 TABLE_END_MARKER = '<!-- docker-images-table:end -->'
 TABLE_START_MARKER = '<!-- docker-images-table:start -->'
@@ -26,6 +28,7 @@ DOCKERFILE_FROM_PATTERN = re.compile(
 )
 DOWNLOAD_BINARY_PATTERN = re.compile(r'(?P<path>/[A-Za-z0-9._/-]+)', re.IGNORECASE)
 ENTRYPOINT_PATTERN = re.compile(r'^\s*ENTRYPOINT\s+\[(?P<entrypoint>[^\]]+)\]', re.MULTILINE)
+GITHUB_REMOTE_PATTERN = re.compile(r'github\.com[:/](?P<slug>[^/]+/[^/.]+?)(?:\.git)?$')
 USER_PATTERN = re.compile(r'^\s*USER\s+(?P<user>[A-Za-z0-9._-]+)\s*$', re.MULTILINE)
 WORKFLOW_IMAGE_PATTERNS = (
     re.compile(r'IMAGE\s*=\s*(?P<image>[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?)'),
@@ -244,12 +247,46 @@ def render_context(context: str) -> str:
     return f'[{context}]({context})'
 
 
-def render_workflow(workflow: str) -> str:
-    """Render the workflow column as a local Markdown link when available."""
+def github_repository_slug(repo_root: pathlib.Path) -> str:
+    """
+    Return the GitHub repository slug for workflow badge URLs.
+
+    :param repo_root: Repository root path.
+    :returns: GitHub repository slug in ``owner/name`` form.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'remote', 'get-url', 'origin'],
+            check=True,
+            capture_output=True,
+            cwd=repo_root,
+            text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return DEFAULT_GITHUB_REPOSITORY
+
+    match = GITHUB_REMOTE_PATTERN.search(result.stdout.strip())
+    if match is None:
+        return DEFAULT_GITHUB_REPOSITORY
+
+    return match.group('slug')
+
+
+def render_workflow(workflow: str, repo_slug: str) -> str:
+    """
+    Render the workflow column as a GitHub Actions badge link when available.
+
+    :param workflow: Repository-relative workflow path.
+    :param repo_slug: GitHub repository slug in ``owner/name`` form.
+    :returns: Markdown badge link for the workflow.
+    """
     if workflow == 'Unknown':
         return workflow
 
-    return f'[{workflow}]({workflow})'
+    workflow_name = pathlib.Path(workflow).name
+    workflow_url = f'https://github.com/{repo_slug}/actions/workflows/{workflow_name}'
+    badge_url = f'{workflow_url}/badge.svg'
+    return f'[![{workflow_name} build status]({badge_url})]({workflow_url})'
 
 
 def image_record_to_dict(image_record: ImageRecord) -> dict[str, str]:
@@ -281,8 +318,14 @@ def load_descriptions(description_path: pathlib.Path | None) -> dict[str, str]:
     return descriptions
 
 
-def render_table(images: list[ImageRecord]) -> str:
-    """Render the README table for discovered images."""
+def render_table(images: list[ImageRecord], repo_slug: str) -> str:
+    """
+    Render the README table for discovered images.
+
+    :param images: Discovered image metadata.
+    :param repo_slug: GitHub repository slug in ``owner/name`` form.
+    :returns: Rendered Markdown table.
+    """
     lines = [
         '| Image | Base Image | Context | Workflow | Description |',
         '| --- | --- | --- | --- | --- |',
@@ -296,7 +339,7 @@ def render_table(images: list[ImageRecord]) -> str:
                 f'| [`{image_record.image}`]({dockerhub_url(image_record.image)}) | '
                 f'`{image_record.base_image}` | '
                 f'{render_context(image_record.context)} | '
-                f'{render_workflow(image_record.workflow)} | '
+                f'{render_workflow(image_record.workflow, repo_slug)} | '
                 f'{image_record.description} |'
             )
 
@@ -333,6 +376,7 @@ def main() -> int:
     try:
         images = discover_images(repo_root)
         descriptions = load_descriptions(description_path)
+        repo_slug = github_repository_slug(repo_root)
         images = [
             dataclasses.replace(image_record, description=descriptions.get(image_record.image, image_record.description))
             for image_record in images
@@ -340,7 +384,7 @@ def main() -> int:
         if print_discovery_json:
             print(json.dumps([image_record_to_dict(image_record) for image_record in images], indent=2))
             return 0
-        table = render_table(images)
+        table = render_table(images, repo_slug)
         update_readme(repo_root, table)
     except Exception as exc:  # pragma: no cover - CLI error path
         print(f'error: {exc}', file=sys.stderr)

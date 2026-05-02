@@ -1,18 +1,14 @@
 # Docker Images
 
-[![Debian Trixie Slim Build](https://github.com/evindunn/docker/actions/workflows/debian-trixie-slim.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/debian-trixie-slim.yml)
-[![Vault Agent Build](https://github.com/evindunn/docker/actions/workflows/vault-agent.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/vault-agent.yml)
-[![Chronyd Build](https://github.com/evindunn/docker/actions/workflows/chronyd.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/chronyd.yml)
-
 This repository contains the docker base images I use in my homelab and other
 personal projects.
 
 <!-- docker-images-table:start -->
 | Image | Base Image | Context | Workflow | Description |
 | --- | --- | --- | --- | --- |
-| [`evindunn/chronyd:latest`](https://hub.docker.com/r/evindunn/chronyd) | `evindunn/debian:trixie-slim` | [chronyd](chronyd) | [.github/workflows/chronyd.yml](.github/workflows/chronyd.yml) | Chrony-based NTP service image for serving and persisting time sync state. |
-| [`evindunn/debian:trixie-slim`](https://hub.docker.com/r/evindunn/debian) | `debian:trixie-slim` | [debian-trixie-slim](debian-trixie-slim) | [.github/workflows/debian-trixie-slim.yml](.github/workflows/debian-trixie-slim.yml) | Debian Trixie slim base image with custom CA certificates installed. |
-| [`evindunn/vault-agent:latest`](https://hub.docker.com/r/evindunn/vault-agent) | `evindunn/debian:trixie-slim` | [vault-agent](vault-agent) | [.github/workflows/vault-agent.yml](.github/workflows/vault-agent.yml) | Vault agent image that authenticates with AppRole and renders TLS certificates from Vault PKI. |
+| [`evindunn/chronyd:latest`](https://hub.docker.com/r/evindunn/chronyd) | `evindunn/debian:trixie-slim` | [chronyd](chronyd) | [![chronyd.yml build status](https://github.com/evindunn/docker/actions/workflows/chronyd.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/chronyd.yml) | Chrony-based NTP service image for serving and persisting time sync state. |
+| [`evindunn/debian:trixie-slim`](https://hub.docker.com/r/evindunn/debian) | `debian:trixie-slim` | [debian-trixie-slim](debian-trixie-slim) | [![debian-trixie-slim.yml build status](https://github.com/evindunn/docker/actions/workflows/debian-trixie-slim.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/debian-trixie-slim.yml) | Debian Trixie slim base image with custom CA certificates installed. |
+| [`evindunn/vault-agent:latest`](https://hub.docker.com/r/evindunn/vault-agent) | `evindunn/debian:trixie-slim` | [vault-agent](vault-agent) | [![vault-agent.yml build status](https://github.com/evindunn/docker/actions/workflows/vault-agent.yml/badge.svg)](https://github.com/evindunn/docker/actions/workflows/vault-agent.yml) | Vault agent image that authenticates with AppRole and renders TLS certificates from Vault PKI. |
 <!-- docker-images-table:end -->
 
 ## Skills
