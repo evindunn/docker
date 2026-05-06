@@ -14,7 +14,7 @@ Use this skill when the user wants a new Docker image added to this repository, 
 
 ## Workflow
 
-1. Run `python3 .codex/skills/create-image/scripts/create_image.py --image-slug <slug> --build-context <context>`.
+1. Run `python3 scripts/create_image.py --image-slug <slug> --build-context <context>`.
 2. If the build context directory does not exist, let the generator create it.
 3. If the build context does not contain a `Dockerfile`, let the generator scaffold one with `FROM <image-slug>`.
 4. Review the generated wrapper workflow under [../../../.github/workflows](../../../.github/workflows) and make sure it passes `image`, `tag`, and `context` into the reusable base workflow.

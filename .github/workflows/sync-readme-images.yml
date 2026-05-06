@@ -30,21 +30,29 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install ai-tooling
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install script dependencies
+        working-directory: scripts
         run: >-
-          python3 -m pip install ai-tooling==0.0.3
+          poetry install
 
       - name: Generate README descriptions
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        working-directory: scripts
         run: >-
-          python3 .codex/skills/workflow-image-readme-sync/scripts/generate_readme_image_descriptions.py
-          --output "${{ runner.temp }}/readme-image-descriptions.json"
+          poetry run python generate_readme_image_descriptions.py --output "${{ runner.temp }}/readme-image-descriptions.json"
 
       - name: Update README table
+        working-directory: scripts
         run: >-
-          python3 .codex/skills/workflow-image-readme-sync/scripts/update_readme.py
-          --description-file "${{ runner.temp }}/readme-image-descriptions.json"
+          poetry run python update_readme.py --description-file "${{ runner.temp }}/readme-image-descriptions.json"
 
       - name: Detect README changes
         id: readme_changes

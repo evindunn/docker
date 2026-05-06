@@ -7,6 +7,7 @@ import pathlib
 import sys
 
 import ai_tooling
+import ai_tooling.generate_image_description.cli
 import openai
 
 import update_readme
@@ -66,7 +67,7 @@ def generate_description(
 def main() -> int:
     """Generate descriptions for all discovered README image rows."""
     args = parse_args()
-    repo_root = pathlib.Path(__file__).resolve().parents[4]
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
 
     try:
         images = update_readme.discover_images(repo_root)

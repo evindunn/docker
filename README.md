@@ -25,13 +25,13 @@ starter `Dockerfile` when either is missing.
 Invoke it with `$create-image`, or run:
 
 ```sh
-python3 .codex/skills/create-image/scripts/create_image.py --image-slug '<slug>' --build-context '<context>'
+python3 scripts/create_image.py --image-slug '<slug>' --build-context '<context>'
 ```
 
 Example:
 
 ```sh
-python3 .codex/skills/create-image/scripts/create_image.py --image-slug 'debian:trixie-slim' --build-context 'debian-trixie-slim'
+python3 scripts/create_image.py --image-slug 'debian:trixie-slim' --build-context 'debian-trixie-slim'
 ```
 
 ### [workflow-image-readme-sync](.codex/skills/workflow-image-readme-sync/SKILL.md)
@@ -42,5 +42,5 @@ updates the managed Docker image table in [README.md](README.md).
 Invoke it with `$workflow-image-readme-sync`, or run:
 
 ```sh
-python3 .codex/skills/workflow-image-readme-sync/scripts/update_readme.py
+python3 scripts/update_readme.py
 ```
