@@ -370,7 +370,8 @@ def update_readme(repo_root: pathlib.Path, table: str) -> None:
 
 def main() -> int:
     """Run the README synchronization workflow."""
-    repo_root = pathlib.Path(__file__).resolve().parents[4]
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
+
     description_path, print_discovery_json = parse_args()
 
     try:
