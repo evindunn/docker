@@ -164,8 +164,7 @@ def build_context_path_filter(build_context: str) -> str:
 def workflow_support_paths() -> list[str]:
     """Return shared workflow support files that should trigger rebuilds."""
     return [
-        '.github/workflows/build-image-base.yml',
-        '.github/workflows/check_readme_image.py',
+        'scripts/**',
         'shared/**',
     ]
 
@@ -231,7 +230,7 @@ def write_workflow(repo_root: pathlib.Path, build_context: str, workflow_text: s
 def main() -> int:
     """Create a Docker image scaffold and workflow from the provided inputs."""
     args = parse_args()
-    repo_root = pathlib.Path(__file__).resolve().parents[4]
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
     image_slug = args.image_slug.strip()
     build_context = normalize_build_context(args.build_context)
 
