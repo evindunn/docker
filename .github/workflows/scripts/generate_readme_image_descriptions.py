@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Generate README image descriptions by invoking the ai-tooling CLI."""
+"""Generate README image descriptions by importing ai-tooling directly."""
 
 import argparse
 import json
 import pathlib
-import subprocess
 import sys
+
+import ai_tooling
+import openai
 
 import update_readme
 
@@ -42,40 +44,19 @@ def generate_description(
 
     :param repo_root: Repository root path.
     :param context_path: Absolute path to the Docker build context directory.
-    :param model: OpenAI model name for the CLI invocation.
+    :param model: OpenAI model name for the description request.
     :returns: Generated description string.
-    :raises ValueError: If the CLI fails or returns invalid JSON.
+    :raises ValueError: If the generated response is invalid.
     """
-    result = subprocess.run(
-        [
-            'generate-image-description',
-            context_path.relative_to(repo_root).as_posix(),
-            '--model',
-            model,
-        ],
-        check=False,
-        capture_output=True,
-        cwd=repo_root,
-        text=True,
-    )
-    if result.returncode != 0:
-        stderr = result.stderr.strip() or 'unknown error'
-        raise ValueError(
-            f'generate-image-description failed for {context_path.relative_to(repo_root).as_posix()}: {stderr}',
-        )
-
-    try:
-        response_data = json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        raise ValueError(
-            f'generate-image-description returned invalid JSON for '
-            f'{context_path.relative_to(repo_root).as_posix()}: {exc}'
-        ) from exc
+    docker_context_mapping = ai_tooling.generate_image_description.cli.build_context_mapping(context_path)
+    docker_context_summary = json.dumps(docker_context_mapping, indent=2, sort_keys=True)
+    client = openai.OpenAI()
+    response_data = ai_tooling.describe_docker_image(client, model, docker_context_summary)
 
     description = response_data.get('description')
     if not isinstance(description, str):
         raise ValueError(
-            f'generate-image-description did not return a string description for '
+            f'ai_tooling.describe_docker_image did not return a string description for '
             f'{context_path.relative_to(repo_root).as_posix()}'
         )
 
