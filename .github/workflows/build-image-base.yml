@@ -49,6 +49,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v7
         with:
+          cache-from: type=registry,ref=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
           push: true
           pull: true
           platforms: linux/amd64,linux/arm64
