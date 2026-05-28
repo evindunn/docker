@@ -50,6 +50,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
+          pull: true
           platforms: linux/amd64,linux/arm64
           context: "${{ steps.vars.outputs.CONTEXT }}"
           build-contexts: |
