@@ -170,6 +170,8 @@ def build_context_path_filter(build_context: str) -> str:
 def workflow_support_paths() -> list[str]:
     """Return shared workflow support files that should trigger rebuilds."""
     return [
+        '.github/workflows/build-image.yml',
+        '.github/workflows/wait-for-parent-image.yml',
         'scripts/**',
         'shared/**',
     ]

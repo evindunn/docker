@@ -14,8 +14,14 @@ on:
         type: string
 
 jobs:
+  wait_for_parent_image:
+    uses: ./.github/workflows/wait-for-parent-image.yml
+    with:
+      context: ${{ inputs.context }}
+
   push_to_registry:
     name: Push Docker image to Docker Hub
+    needs: wait_for_parent_image
     runs-on: ubuntu-latest
     permissions:
       contents: read

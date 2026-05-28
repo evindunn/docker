@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/build-image.yml'
+      - '.github/workflows/wait-for-parent-image.yml'
       - 'shared/**'
       - '.github/workflows/chronyd.yml'
       - 'chronyd/**'

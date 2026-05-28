@@ -19,7 +19,7 @@ Use this skill when the user wants a new Docker image added to this repository, 
 3. If the build context does not contain a `Dockerfile`, let the generator scaffold one with `FROM <image-slug>`.
 4. Review the generated wrapper workflow under [../../../.github/workflows](../../../.github/workflows) and make sure it passes `image`, `tag`, and `context` into the reusable base workflow.
 5. Make sure the workflow defines a per-image `concurrency` group with `cancel-in-progress: false` so duplicate runs for the same image queue instead of overlapping.
-6. Make sure the `paths` filters include the workflow file, the reusable base workflow, the shared README check script, the build context, and shared assets under [../../../shared](../../../shared).
+6. Make sure the `paths` filters include the workflow file, the reusable base workflow, the reusable parent-wait workflow, the shared README check script, the build context, and shared assets under [../../../shared](../../../shared).
 
 ## Notes
 
@@ -27,6 +27,7 @@ Use this skill when the user wants a new Docker image added to this repository, 
 - The workflow file name is derived from the build context and written as `<build-context>.yml`.
 - When it scaffolds a missing `Dockerfile`, the initial contents are based on the provided image slug.
 - The reusable base workflow lives at [../../../.github/workflows/build-image.yml](../../../.github/workflows/build-image.yml).
+- The reusable parent-wait workflow lives at [../../../.github/workflows/wait-for-parent-image.yml](../../../.github/workflows/wait-for-parent-image.yml).
 - Wrapper workflows pass `image`, `tag`, and `context` into the reusable base workflow and inherit repository secrets.
 - Wrapper workflows should define a stable per-image `concurrency` group and set `cancel-in-progress: false` so duplicate builds queue.
 - The reusable workflow depends on shared automation under [`../../../scripts`](../../../scripts) and shared build assets under [`../../../shared`](../../../shared).

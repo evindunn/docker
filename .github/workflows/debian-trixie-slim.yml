@@ -33,21 +33,13 @@ jobs:
           echo 'tag=trixie-slim' >> "$GITHUB_OUTPUT"
 
   build:
-    needs:
-      - target
-      - wait_for_parent_image
+    needs: target
     uses: ./.github/workflows/build-image.yml
     with:
       image: ${{ needs.target.outputs.image }}
       tag: ${{ needs.target.outputs.tag }}
       context: debian-trixie-slim
     secrets: inherit
-
-  wait_for_parent_image:
-    needs: target
-    uses: ./.github/workflows/wait-for-parent-image.yml
-    with:
-      context: debian-trixie-slim
 
   build_children:
     needs:
