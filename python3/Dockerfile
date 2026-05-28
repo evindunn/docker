@@ -3,6 +3,9 @@ FROM evindunn/debian:trixie-slim
 ENV PIPX_BIN_DIR=/usr/local/bin
 ENV PIPX_HOME=/opt/pipx
 
+# Disable pip cache by default
+ENV PIP_NO_CACHE_DIR=false
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
@@ -14,4 +17,3 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         python3-venv
 
 RUN pipx ensurepath --global --prepend
-RUN printf '[global]\nno-cache-dir = false' > /etc/pip.conf
