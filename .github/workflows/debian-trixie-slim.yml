@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/build-image.yml'
+      - '.github/workflows/build-image-children.yml'
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
       - 'scripts/**'
@@ -25,6 +26,7 @@ jobs:
         run: |
           echo 'image=evindunn/debian' >> "$GITHUB_OUTPUT"
           echo 'tag=trixie-slim' >> "$GITHUB_OUTPUT"
+          echo 'full_slug=evindunn/debian:trixie-slim' >> "$GITHUB_OUTPUT"
 
   build:
     needs: target
@@ -35,38 +37,10 @@ jobs:
       context: debian-trixie-slim
     secrets: inherit
 
-  find_child_workflows:
-    name: Find child workflows
+  build_children:
     needs:
       - target
       - build
-    runs-on: ubuntu-latest
-    container: 'evindunn/poetry:latest'
-    outputs:
-      workflows: ${{ steps.find.outputs.workflows }}
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v6
-
-      - name: Find child workflows
-        id: find
-        run: |
-          workflows="$(python3 scripts/find_base_image_children.py "${{ needs.target.outputs.image }}:${{ needs.target.outputs.tag }}")"
-          echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
-
-  trigger_child_workflows:
-    name: Trigger child workflows
-    needs: find_child_workflows
-    if: ${{ needs.find_child_workflows.outputs.workflows != '[]' }}
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    strategy:
-      matrix:
-        workflow: ${{ fromJson(needs.find_child_workflows.outputs.workflows) }}
-    steps:
-      - name: Trigger child workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run "${{ matrix.workflow }}" --ref "${{ github.ref_name }}" --repo "${{ github.repository }}"
+    uses: ./.github/workflows/build-image-children.yml
+    with:
+      parent_image: ${{ needs.target.outputs.full_slug }}

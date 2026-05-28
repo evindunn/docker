@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/build-image.yml'
+      - '.github/workflows/build-image-children.yml'
       - 'scripts/**'
       - 'shared/**'
       - '.github/workflows/python3.yml'
@@ -19,3 +20,9 @@ jobs:
       tag: latest
       context: python3
     secrets: inherit
+
+  build_children:
+    needs: build
+    uses: ./.github/workflows/build-image-children.yml
+    with:
+      parent_image: evindunn/python3:latest

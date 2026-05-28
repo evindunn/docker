@@ -1,0 +1,42 @@
+name: build image children
+
+on:
+  workflow_call:
+    inputs:
+      parent_image:
+        required: true
+        type: string
+
+jobs:
+  find_child_workflows:
+    name: Find child workflows
+    runs-on: ubuntu-latest
+    container: 'evindunn/poetry:latest'
+    outputs:
+      workflows: ${{ steps.find.outputs.workflows }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Find child workflows
+        id: find
+        run: |
+          workflows="$(python3 scripts/find_base_image_children.py "${{ inputs.parent_image }}")"
+          echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
+
+  trigger_child_workflows:
+    name: Trigger child workflows
+    needs: find_child_workflows
+    if: ${{ needs.find_child_workflows.outputs.workflows != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      matrix:
+        workflow: ${{ fromJson(needs.find_child_workflows.outputs.workflows) }}
+    steps:
+      - name: Trigger child workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run "${{ matrix.workflow }}" --ref "${{ github.ref_name }}" --repo "${{ github.repository }}"
