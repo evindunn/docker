@@ -16,4 +16,5 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         python3-pip \
         python3-venv
 
-RUN pipx ensurepath --global --prepend
+RUN pipx ensurepath --global --prepend && \
+    ln -sf $(which python3) /usr/local/bin/python
