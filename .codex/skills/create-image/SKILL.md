@@ -18,8 +18,7 @@ Use this skill when the user wants a new Docker image added to this repository, 
 2. If the build context directory does not exist, let the generator create it.
 3. If the build context does not contain a `Dockerfile`, let the generator scaffold one with `FROM <image-slug>`.
 4. Review the generated wrapper workflow under [../../../.github/workflows](../../../.github/workflows) and make sure it passes `image`, `tag`, and `context` into the reusable base workflow.
-5. Make sure the `build` job skips push events whose head commit message contains `[skip-build]`, while still allowing `workflow_dispatch`.
-6. Make sure the `paths` filters include the workflow file, the reusable base workflow, the shared README check script, the build context, and shared assets under [../../../shared](../../../shared).
+5. Make sure the `paths` filters include the workflow file, the reusable base workflow, the shared README check script, the build context, and shared assets under [../../../shared](../../../shared).
 
 ## Notes
 
@@ -28,7 +27,6 @@ Use this skill when the user wants a new Docker image added to this repository, 
 - When it scaffolds a missing `Dockerfile`, the initial contents are based on the provided image slug.
 - The reusable base workflow lives at [../../../.github/workflows/build-image.yml](../../../.github/workflows/build-image.yml).
 - Wrapper workflows pass `image`, `tag`, and `context` into the reusable base workflow and inherit repository secrets.
-- Wrapper workflows should guard the `build` job with `${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip-build]') }}` so `[skip-build]` skips push-triggered image builds without affecting manual dispatches.
 - The reusable workflow depends on shared automation under [`../../../scripts`](../../../scripts) and shared build assets under [`../../../shared`](../../../shared).
 - The reusable workflow uses `docker/setup-qemu-action`, `docker/setup-buildx-action`, and a shared auxiliary build context at `./shared`.
 - The reusable workflow publishes multi-arch images for both `linux/amd64` and `linux/arm64`.

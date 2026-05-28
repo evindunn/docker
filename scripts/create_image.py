@@ -203,7 +203,6 @@ def render_workflow(image_slug: str, build_context: str) -> str:
         '',
         'jobs:',
         '  build:',
-        "    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip-build]') }}",
         '    uses: ./.github/workflows/build-image.yml',
         '    with:',
         f'      image: {image_base}',
