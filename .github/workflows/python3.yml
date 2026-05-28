@@ -1,0 +1,21 @@
+name: build evindunn/python3
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-image-base.yml'
+      - 'scripts/**'
+      - 'shared/**'
+      - '.github/workflows/python3.yml'
+      - 'python3/**'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-image-base.yml
+    with:
+      image: evindunn/python3
+      tag: latest
+      context: python3
+    secrets: inherit
