@@ -1,0 +1,21 @@
+name: build evindunn/poetry
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-image-base.yml'
+      - 'scripts/**'
+      - 'shared/**'
+      - '.github/workflows/poetry.yml'
+      - 'poetry/**'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-image-base.yml
+    with:
+      image: evindunn/poetry
+      tag: latest
+      context: poetry
+    secrets: inherit
