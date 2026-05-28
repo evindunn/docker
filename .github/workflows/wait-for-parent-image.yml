@@ -1,0 +1,57 @@
+name: wait for parent image
+
+on:
+  workflow_call:
+    inputs:
+      context:
+        required: true
+        type: string
+
+jobs:
+  find_parent_workflows:
+    name: Find parent workflows
+    runs-on: ubuntu-latest
+    container: 'evindunn/poetry:latest'
+    outputs:
+      parent_image: ${{ steps.parent.outputs.parent_image }}
+      workflows: ${{ steps.workflows.outputs.workflows }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Find parent image
+        id: parent
+        run: |
+          parent_image="$(python3 scripts/find_parent_image.py "${{ inputs.context }}")"
+          echo "parent_image=${parent_image}" >> "$GITHUB_OUTPUT"
+
+      - name: Find parent workflows
+        id: workflows
+        run: |
+          workflows="$(python3 scripts/find_image_workflows.py "${{ steps.parent.outputs.parent_image }}")"
+          echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
+
+  wait_for_parent_workflows:
+    name: Wait for parent workflows
+    needs: find_parent_workflows
+    if: ${{ needs.find_parent_workflows.outputs.workflows != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    strategy:
+      matrix:
+        workflow: ${{ fromJson(needs.find_parent_workflows.outputs.workflows) }}
+    steps:
+      - name: Wait for workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_ids="$(gh run list --workflow "${{ matrix.workflow }}" --branch "${{ github.ref_name }}" --repo "${{ github.repository }}" --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId')"
+          if [ -z "${run_ids}" ]; then
+            exit 0
+          fi
+
+          for run_id in ${run_ids}; do
+            gh run watch "${run_id}" --repo "${{ github.repository }}" --exit-status
+          done

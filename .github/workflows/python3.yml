@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/build-image.yml'
       - '.github/workflows/build-image-children.yml'
+      - '.github/workflows/wait-for-parent-image.yml'
       - 'scripts/**'
       - 'shared/**'
       - '.github/workflows/python3.yml'
@@ -13,7 +14,13 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  wait_for_parent_image:
+    uses: ./.github/workflows/wait-for-parent-image.yml
+    with:
+      context: python3
+
   build:
+    needs: wait_for_parent_image
     uses: ./.github/workflows/build-image.yml
     with:
       image: evindunn/python3
@@ -25,4 +32,5 @@ jobs:
     needs: build
     uses: ./.github/workflows/build-image-children.yml
     with:
-      parent_image: evindunn/python3:latest
+      image: evindunn/python3
+      tag: latest

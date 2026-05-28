@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/build-image.yml'
       - '.github/workflows/build-image-children.yml'
+      - '.github/workflows/wait-for-parent-image.yml'
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
       - 'scripts/**'
@@ -26,10 +27,11 @@ jobs:
         run: |
           echo 'image=evindunn/debian' >> "$GITHUB_OUTPUT"
           echo 'tag=trixie-slim' >> "$GITHUB_OUTPUT"
-          echo 'full_slug=evindunn/debian:trixie-slim' >> "$GITHUB_OUTPUT"
 
   build:
-    needs: target
+    needs:
+      - target
+      - wait_for_parent_image
     uses: ./.github/workflows/build-image.yml
     with:
       image: ${{ needs.target.outputs.image }}
@@ -37,10 +39,17 @@ jobs:
       context: debian-trixie-slim
     secrets: inherit
 
+  wait_for_parent_image:
+    needs: target
+    uses: ./.github/workflows/wait-for-parent-image.yml
+    with:
+      context: debian-trixie-slim
+
   build_children:
     needs:
       - target
       - build
     uses: ./.github/workflows/build-image-children.yml
     with:
-      parent_image: ${{ needs.target.outputs.full_slug }}
+      image: ${{ needs.target.outputs.image }}
+      tag: ${{ needs.target.outputs.tag }}
