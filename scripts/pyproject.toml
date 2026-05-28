@@ -5,7 +5,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "ai-tooling (==0.0.3)"
+    "ai-tooling (==0.0.4)"
 ]
 
 [tool.poetry]

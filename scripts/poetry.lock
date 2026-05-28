@@ -2,14 +2,14 @@
 
 [[package]]
 name = "ai-tooling"
-version = "0.0.3"
+version = "0.0.4"
 description = "Tooling that uses AI tech"
 optional = false
-python-versions = "<4.0,>=3.14"
+python-versions = ">=3.14"
 groups = ["main"]
 files = [
-    {file = "ai_tooling-0.0.3-py3-none-any.whl", hash = "sha256:85bf6dee1d97828d4bb3705b7e736d6b9db37144f844cd0a238115703f9bcc5f"},
-    {file = "ai_tooling-0.0.3.tar.gz", hash = "sha256:7cef182b5441f9abe51a00255ae138d5a8ddb9cbe9df433594ad0b45073d7772"},
+    {file = "ai_tooling-0.0.4-py3-none-any.whl", hash = "sha256:1e2d1fa042334ddafc81f6f40555d78a4afe1d5270ea55e4008c5a3395fda511"},
+    {file = "ai_tooling-0.0.4.tar.gz", hash = "sha256:615220a422ce68dee885033a3fe166d78f45eb74f95fd34211178e199066e6d4"},
 ]
 
 [package.dependencies]
@@ -537,5 +537,5 @@ typing-extensions = ">=4.12.0"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.14,<4"
-content-hash = "36e4d11b5211ea8c02e2c723caf2f460eb9a6ac67c9490c738356da163eb503a"
+python-versions = ">=3.14"
+content-hash = "24038680faf661cd2f0d6f198f103201af49a4017dd515bca011e62ec094e648"
