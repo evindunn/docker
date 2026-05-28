@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Make the `workflow-image-readme-sync` skill idempotent.
+- [ x ] Make the `workflow-image-readme-sync` skill idempotent.
   Success looks like repeated runs producing no diff when workflows and image metadata have not changed.
 
 ## Notes
