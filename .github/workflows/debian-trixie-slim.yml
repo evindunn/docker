@@ -11,6 +11,8 @@ on:
       - 'debian-trixie-slim/**'
       - 'scripts/**'
       - 'shared/**'
+  schedule:
+    - cron: '0 0 * * 0' # every Sunday at midnight
   workflow_dispatch: {}
 
 concurrency:
