@@ -7,8 +7,8 @@ ENV GOMPLATE_VERSION=3.11.5
 
 COPY vault-ca.crt /usr/local/share/ca-certificates/
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     update-ca-certificates && \
     apt-get -qq update && \
     apt-get -qq install --no-install-recommends -y \

@@ -42,7 +42,10 @@ jobs:
         id: push
         uses: docker/build-push-action@v7
         with:
-          cache-from: type=registry,ref=${{ inputs.image }}:${{ inputs.tag }}
+          cache-from: |
+            type=gha,scope=${{ inputs.image }}
+            type=registry,ref=${{ inputs.image }}:${{ inputs.tag }}
+          cache-to: type=gha,scope=${{ inputs.image }},mode=max
           push: true
           pull: true
           platforms: linux/amd64,linux/arm64

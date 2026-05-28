@@ -1,7 +1,8 @@
 FROM evindunn/debian:trixie-slim
 
-RUN apt-get update && \
-    apt-get -y upgrade && \
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt install -y chrony=4.6.1-3+deb13u1 && \
     apt clean all && \
     rm -rf /var/lib/apt/lists/*

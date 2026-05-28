@@ -6,10 +6,9 @@ ENV PIPX_HOME=/opt/pipx
 # Disable pip cache by default
 ENV PIP_NO_CACHE_DIR=false
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt upgrade -y && \
     apt install -y \
         git \
         pipx \
