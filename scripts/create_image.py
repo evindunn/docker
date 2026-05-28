@@ -153,6 +153,12 @@ def workflow_name(image_slug: str) -> str:
     return f'build {full_image_name(image_slug)}'
 
 
+def workflow_concurrency_group(image_slug: str) -> str:
+    """Return the workflow concurrency group."""
+    image_name = full_image_name(image_slug)
+    return f"image-build-{image_name.replace('/', '-').replace(':', '-')}"
+
+
 def build_context_path_filter(build_context: str) -> str:
     """Return the GitHub Actions path filter for the build context."""
     if build_context == '.':
@@ -200,6 +206,10 @@ def render_workflow(image_slug: str, build_context: str) -> str:
 
     lines.extend([
         '  workflow_dispatch: {}',
+        '',
+        'concurrency:',
+        f"  group: '{workflow_concurrency_group(image_slug)}'",
+        '  cancel-in-progress: false',
         '',
         'jobs:',
         '  build:',

@@ -13,6 +13,10 @@ on:
       - 'python3/**'
   workflow_dispatch: {}
 
+concurrency:
+  group: 'image-build-evindunn-python3-latest'
+  cancel-in-progress: false
+
 jobs:
   wait_for_parent_image:
     uses: ./.github/workflows/wait-for-parent-image.yml

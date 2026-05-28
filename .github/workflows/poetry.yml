@@ -11,6 +11,10 @@ on:
       - 'poetry/**'
   workflow_dispatch: {}
 
+concurrency:
+  group: 'image-build-evindunn-poetry-latest'
+  cancel-in-progress: false
+
 jobs:
   build:
     uses: ./.github/workflows/build-image.yml
