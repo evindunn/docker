@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '.github/workflows/build-image-base.yml'
+      - '.github/workflows/build-image.yml'
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
       - 'scripts/**'
@@ -27,8 +27,9 @@ jobs:
           echo 'tag=trixie-slim' >> "$GITHUB_OUTPUT"
 
   build:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip-build]') }}
     needs: target
-    uses: ./.github/workflows/build-image-base.yml
+    uses: ./.github/workflows/build-image.yml
     with:
       image: ${{ needs.target.outputs.image }}
       tag: ${{ needs.target.outputs.tag }}
@@ -51,7 +52,7 @@ jobs:
       - name: Find child workflows
         id: find
         run: |
-          workflows="$(python3 scripts/find_base_image_children.py "${{ needs.target.outputs.image }}:${{ needs.target.outputs.tag }}" --workflow-path .github/workflows)"
+          workflows="$(python3 scripts/find_base_image_children.py "${{ needs.target.outputs.image }}:${{ needs.target.outputs.tag }}")"
           echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
 
   trigger_child_workflows:
