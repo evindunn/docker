@@ -7,14 +7,66 @@ on:
       - '.github/workflows/build-image-base.yml'
       - '.github/workflows/debian-trixie-slim.yml'
       - 'debian-trixie-slim/**'
+      - 'scripts/**'
       - 'shared/**'
   workflow_dispatch: {}
 
 jobs:
+  target:
+    name: Set target image metadata
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.target.outputs.image }}
+      tag: ${{ steps.target.outputs.tag }}
+      full_slug: ${{ steps.target.outputs.full_slug }}
+    steps:
+      - name: Set target image metadata
+        id: target
+        run: |
+          echo 'image=evindunn/debian' >> "$GITHUB_OUTPUT"
+          echo 'tag=trixie-slim' >> "$GITHUB_OUTPUT"
+
   build:
+    needs: target
     uses: ./.github/workflows/build-image-base.yml
     with:
-      image: evindunn/debian
-      tag: trixie-slim
+      image: ${{ needs.target.outputs.image }}
+      tag: ${{ needs.target.outputs.tag }}
       context: debian-trixie-slim
     secrets: inherit
+
+  find_child_workflows:
+    name: Find child workflows
+    needs:
+      - target
+      - build
+    runs-on: ubuntu-latest
+    container: 'evindunn/poetry:latest'
+    outputs:
+      workflows: ${{ steps.find.outputs.workflows }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v6
+
+      - name: Find child workflows
+        id: find
+        run: |
+          workflows="$(python3 scripts/find_base_image_children.py "${{ needs.target.outputs.image }}:${{ needs.target.outputs.tag }}" --workflow-path .github/workflows)"
+          echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
+
+  trigger_child_workflows:
+    name: Trigger child workflows
+    needs: find_child_workflows
+    if: ${{ needs.find_child_workflows.outputs.workflows != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      matrix:
+        workflow: ${{ fromJson(needs.find_child_workflows.outputs.workflows) }}
+    steps:
+      - name: Trigger child workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run "${{ matrix.workflow }}" --ref "${{ github.ref_name }}"
