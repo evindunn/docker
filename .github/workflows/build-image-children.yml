@@ -23,6 +23,7 @@ jobs:
 
       - name: Find child workflows
         id: find
+        shell: bash
         run: |
           mapfile -t child_images < <(python3 scripts/find_image_children.py "${{ inputs.image }}:${{ inputs.tag }}" | jq -r '.[]')
           if [ "${#child_images[@]}" -eq 0 ]; then

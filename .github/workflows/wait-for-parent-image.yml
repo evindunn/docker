@@ -53,5 +53,6 @@ jobs:
           fi
 
           for run_id in ${run_ids}; do
-            gh run watch "${run_id}" --repo "${{ github.repository }}" --exit-status
+            echo "waiting for ${run_id} to complete..."
+            gh run watch "${run_id}" --repo "${{ github.repository }}" --exit-status > /dev/null 2>&1
           done
