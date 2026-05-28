@@ -24,7 +24,13 @@ jobs:
       - name: Find child workflows
         id: find
         run: |
-          workflows="$(python3 scripts/find_base_image_children.py "${{ inputs.image }}:${{ inputs.tag }}")"
+          mapfile -t child_images < <(python3 scripts/find_image_children.py "${{ inputs.image }}:${{ inputs.tag }}" | jq -r '.[]')
+          if [ "${#child_images[@]}" -eq 0 ]; then
+            echo 'workflows=[]' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          workflows="$(python3 scripts/find_image_workflows.py "${child_images[@]}")"
           echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
 
   trigger_child_workflows:

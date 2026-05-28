@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print workflow names whose build contexts use a given base image."""
+"""Print child image references built from a given parent image."""
 
 import argparse
 import json
@@ -11,7 +11,7 @@ import sys
 DOCKERFILE_GLOB = 'Dockerfile*'
 FROM_LINE_RE = re.compile(r'^FROM(?:\s+--platform=\S+)?\s+(?P<image>\S+)(?:\s+AS\s+\S+)?$', re.IGNORECASE)
 WORKFLOW_CONTEXT_RE = re.compile(r'^\s*context:\s*(?:"(?P<quoted>[^"]+)"|(?P<plain>\S+))\s*$')
-WORKFLOW_NAME_RE = re.compile(r'^name:\s*(?P<name>.+?)\s*$')
+WORKFLOW_NAME_RE = re.compile(r'^name:\s*build\s+(?P<image>\S+)\s*$')
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 WORKFLOWS_DIR = REPO_ROOT / '.github' / 'workflows'
 
@@ -19,7 +19,7 @@ WORKFLOWS_DIR = REPO_ROOT / '.github' / 'workflows'
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description='Print a JSON list of workflow names whose build contexts use the given base image.',
+        description='Print a JSON list of child image references built from the provided base image.',
     )
     parser.add_argument(
         'image',
@@ -71,57 +71,58 @@ def find_build_contexts(image: str) -> list[str]:
     return sorted(matches)
 
 
-def workflow_name_for_context(context: str, workflow_path: pathlib.Path) -> str | None:
+def workflow_image_for_context(context: str, workflow_path: pathlib.Path) -> str | None:
     """
-    Return the workflow display name when the workflow builds the provided context.
+    Return the published image reference when the workflow builds the provided context.
 
     :param context: Build context to match.
     :param workflow_path: Workflow file to inspect.
-    :returns: Workflow name when the context matches, otherwise ``None``.
+    :returns: Published image reference when the context matches, otherwise ``None``.
     """
-    workflow_name: str | None = None
     workflow_context: str | None = None
+    workflow_image: str | None = None
 
     for raw_line in workflow_path.read_text(encoding='utf-8').splitlines():
-        if workflow_name is None:
-            workflow_name_match = WORKFLOW_NAME_RE.match(raw_line)
-            if workflow_name_match:
-                workflow_name = workflow_name_match.group('name').strip()
+        line = raw_line.strip()
+        if workflow_image is None:
+            match = WORKFLOW_NAME_RE.match(line)
+            if match is not None:
+                workflow_image = match.group('image')
                 continue
 
         workflow_context_match = WORKFLOW_CONTEXT_RE.match(raw_line)
         if workflow_context_match:
             workflow_context = workflow_context_match.group('quoted') or workflow_context_match.group('plain')
 
-    if workflow_name and workflow_context == context:
-        return workflow_name
+    if workflow_image and workflow_context == context:
+        return workflow_image
 
     return None
 
 
-def find_workflow_names(image: str) -> list[str]:
+def find_child_images(image: str) -> list[str]:
     """
-    Find workflow names that build contexts using the provided base image.
+    Find child image references built from the provided image.
 
-    :param image: Exact image reference to match.
-    :returns: Sorted list of unique workflow names.
+    :param image: Base image reference to match.
+    :returns: Sorted list of matching child image references.
     """
     build_contexts = set(find_build_contexts(image))
-    workflow_names: set[str] = set()
+    workflow_images: set[str] = set()
 
     for workflow_path in sorted(WORKFLOWS_DIR.glob('*.yml')):
         for context in build_contexts:
-            workflow_name = workflow_name_for_context(context, workflow_path)
-            if workflow_name is not None:
-                workflow_names.add(workflow_name)
+            workflow_image = workflow_image_for_context(context, workflow_path)
+            if workflow_image is not None:
+                workflow_images.add(workflow_image)
 
-    return sorted(workflow_names)
+    return sorted(workflow_images)
 
 
 def main() -> int:
     """Run the command-line interface."""
     args = parse_args()
-    json.dump(find_workflow_names(args.image), sys.stdout)
+    json.dump(find_child_images(args.image), sys.stdout)
     sys.stdout.write('\n')
     return 0
 

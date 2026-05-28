@@ -22,7 +22,7 @@ jobs:
       - name: Find parent image
         id: parent
         run: |
-          parent_image="$(python3 scripts/find_parent_image.py "${{ inputs.context }}")"
+          parent_image="$(python3 scripts/find_image_parent.py "${{ inputs.context }}")"
           echo "parent_image=${parent_image}" >> "$GITHUB_OUTPUT"
 
       - name: Find parent workflows

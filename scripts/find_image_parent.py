@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the base image used by a build context Dockerfile."""
+"""Print the parent image used by a build context Dockerfile."""
 
 import argparse
 import pathlib
