@@ -12,7 +12,7 @@ on:
       - 'scripts/**'
       - 'shared/**'
   schedule:
-    - cron: '0 0 * * 0' # every Sunday at midnight
+    - cron: '40 3 * * 0' # every Sunday at midnight
   workflow_dispatch: {}
 
 concurrency:
