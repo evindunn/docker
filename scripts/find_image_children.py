@@ -19,13 +19,37 @@ WORKFLOWS_DIR = REPO_ROOT / '.github' / 'workflows'
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description='Print a JSON list of child image references built from the provided base image.',
+        description='Print a JSON list of child image references built from the provided base image from JSON or stdin.',
     )
     parser.add_argument(
-        'image',
-        help='Base image reference to match, for example evindunn/debian:trixie-slim.',
+        'images_json',
+        nargs='?',
+        help='A single image reference or a JSON array of image references to match',
     )
     return parser.parse_args()
+
+
+def parse_images_input(images_json: str) -> list[str]:
+    """
+    Parse a JSON array of image references. If images_json is a single string,
+    it will be treated as a one-element array.
+
+    :param images_json: JSON text representing a list of image references.
+    :returns: Parsed image references.
+    :raises ValueError: If the input is not a JSON array of strings.
+    """
+    try:
+        parsed_images = json.loads(images_json)
+    except json.JSONDecodeError:
+        parsed_images = [images_json.strip()]
+
+    if not parsed_images:
+        raise ValueError('input must contain at least one image reference')
+
+    if not all(isinstance(image, str) for image in parsed_images):
+        raise ValueError('input must be a JSON array of strings')
+
+    return parsed_images
 
 
 def dockerfile_context(dockerfile_path: pathlib.Path) -> str:
@@ -122,7 +146,26 @@ def find_child_images(image: str) -> list[str]:
 def main() -> int:
     """Run the command-line interface."""
     args = parse_args()
-    json.dump(find_child_images(args.image), sys.stdout)
+
+    images_json = args.images_json
+    if images_json is None:
+        if sys.stdin.isatty():
+            print('error: expected a JSON array or single string as input', file=sys.stderr)
+            return 1
+        else:
+            images_json = sys.stdin.read()
+
+    try:
+        images = parse_images_input(images_json)
+    except ValueError as exc:
+        print(f'error: {exc}', file=sys.stderr)
+        return 1
+
+    child_images: set[str] = set()
+    for image in images:
+        child_images.update(find_child_images(image))
+
+    json.dump(sorted(child_images), sys.stdout)
     sys.stdout.write('\n')
     return 0
 

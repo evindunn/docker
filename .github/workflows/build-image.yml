@@ -55,10 +55,10 @@ jobs:
           push: true
           pull: true
           platforms: linux/amd64,linux/arm64
-          context: "${{ inputs.context }}"
+          context: '${{ inputs.context }}'
           build-contexts: |
             shared=./shared
-          tags: "${{ inputs.image }}:${{ inputs.tag }}"
+          tags: '${{ inputs.image }}:${{ inputs.tag }}'
 
       - name: Generate artifact attestation
         uses: actions/attest@v4

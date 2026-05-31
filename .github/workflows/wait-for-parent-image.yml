@@ -22,13 +22,13 @@ jobs:
       - name: Find parent image
         id: parent
         run: |
-          parent_image="$(python3 scripts/find_image_parent.py "${{ inputs.context }}")"
+          parent_image="$(python3 scripts/find_image_parent.py '${{ inputs.context }}')"
           echo "parent_image=${parent_image}" >> "$GITHUB_OUTPUT"
 
       - name: Find parent workflows
         id: workflows
         run: |
-          workflows="$(python3 scripts/find_image_workflows.py "${{ steps.parent.outputs.parent_image }}")"
+          workflows="$(python3 scripts/find_image_workflows.py '${{ steps.parent.outputs.parent_image }}')"
           echo "workflows=${workflows}" >> "$GITHUB_OUTPUT"
 
   wait_for_parent_workflows:
@@ -47,12 +47,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          run_ids="$(gh run list --workflow "${{ matrix.workflow }}" --branch "${{ github.ref_name }}" --repo "${{ github.repository }}" --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId')"
+          run_ids="$(gh run list --workflow '${{ matrix.workflow }}' --branch '${{ github.ref_name }}' --repo '${{ github.repository }}' --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId')"
           if [ -z "${run_ids}" ]; then
             exit 0
           fi
 
           for run_id in ${run_ids}; do
             echo "waiting for ${run_id} to complete..."
-            gh run watch "${run_id}" --repo "${{ github.repository }}" --exit-status > /dev/null 2>&1
+            gh run watch "${run_id}" --repo '${{ github.repository }}' --exit-status > /dev/null 2>&1
           done

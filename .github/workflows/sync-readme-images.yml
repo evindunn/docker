@@ -47,12 +47,12 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         working-directory: scripts
         run: >-
-          poetry run python generate_readme_image_descriptions.py --output "${{ runner.temp }}/readme-image-descriptions.json"
+          poetry run python generate_readme_image_descriptions.py --output '${{ runner.temp }}/readme-image-descriptions.json'
 
       - name: Update README table
         working-directory: scripts
         run: >-
-          poetry run python update_readme.py --description-file "${{ runner.temp }}/readme-image-descriptions.json"
+          poetry run python update_readme.py --description-file '${{ runner.temp }}/readme-image-descriptions.json'
 
       - name: Detect README changes
         id: readme_changes
