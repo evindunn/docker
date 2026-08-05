@@ -47,7 +47,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          run_ids="$(gh run list --workflow '${{ matrix.workflow }}' --branch '${{ github.ref_name }}' --repo '${{ github.repository }}' --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId')"
+          gh_error="$(mktemp)"
+          if ! run_ids="$(gh run list --workflow '${{ matrix.workflow }}' --branch '${{ github.ref_name }}' --repo '${{ github.repository }}' --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId' 2> "${gh_error}")"; then
+            if grep -q 'could not find any workflows named' "${gh_error}"; then
+              echo "workflow '${{ matrix.workflow }}' was not found; continuing without waiting"
+              exit 0
+            fi
+
+            cat "${gh_error}" >&2
+            exit 1
+          fi
+
           if [ -z "${run_ids}" ]; then
             exit 0
           fi
