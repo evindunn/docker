@@ -6,6 +6,9 @@ import pathlib
 import re
 import sys
 
+import find_image_parent
+import find_image_workflows
+
 
 DEFAULT_DOCKERHUB_NAMESPACE = 'evindunn'
 WORKFLOW_DIR = pathlib.Path('.github/workflows')
@@ -171,40 +174,82 @@ def workflow_support_paths() -> list[str]:
     """Return shared workflow support files that should trigger rebuilds."""
     return [
         '.github/workflows/build-image.yml',
+        '.github/workflows/build-image-children.yml',
         '.github/workflows/wait-for-parent-image.yml',
         'scripts/**',
         'shared/**',
     ]
 
 
-def render_workflow(image_slug: str, build_context: str) -> str:
+def managed_parent_paths(build_context: str) -> list[str]:
+    """
+    Return path filters for images whose parent is managed by this repository.
+
+    :param build_context: Build context relative path.
+    :returns: Narrow path filters for direct rebuilds.
+    """
+    return [
+        'shared/**',
+        build_context_path_filter(build_context),
+    ]
+
+
+def has_managed_parent_workflow(build_context: str) -> bool:
+    """
+    Return whether the build context uses a parent image built by this repository.
+
+    :param build_context: Build context relative path.
+    :returns: ``True`` when the context's parent image has a local build workflow.
+    """
+    try:
+        parent_image = find_image_parent.find_parent_image(build_context)
+    except ValueError:
+        return False
+
+    return bool(find_image_workflows.find_workflow_names([parent_image]))
+
+
+def unmanaged_parent_paths(build_context: str) -> list[str]:
+    """
+    Return path filters for images whose parent is outside this repository.
+
+    :param build_context: Build context relative path.
+    :returns: Full path filters for root image rebuilds.
+    """
+    workflow_file = workflow_filename(build_context)
+    return [
+        *workflow_support_paths(),
+        f'.github/workflows/{workflow_file}',
+        build_context_path_filter(build_context),
+    ]
+
+
+def render_workflow(image_slug: str, build_context: str, path_filters: list[str] | None = None) -> str:
     """
     Render the GitHub Actions workflow YAML.
 
     :param image_slug: Docker image slug without the namespace prefix.
     :param build_context: Build context relative path.
+    :param path_filters: Optional push path filters to include.
     :returns: Workflow YAML content.
     """
-    workflow_file = workflow_filename(build_context)
     image_name = full_image_name(image_slug)
     image_base, image_tag = split_image_slug(image_name)
     lines = [
         f'name: {workflow_name(image_slug)}',
         '',
         'on:',
-        '  push:',
-        '    branches: [ main ]',
-        '    paths:',
     ]
 
-    path_filters = [
-        *workflow_support_paths(),
-        f'.github/workflows/{workflow_file}',
-        build_context_path_filter(build_context),
-    ]
+    if path_filters is not None:
+        lines.extend([
+            '  push:',
+            '    branches: [ main ]',
+            '    paths:',
+        ])
 
-    for path_filter in path_filters:
-        lines.append(f"      - '{path_filter}'")
+        for path_filter in path_filters:
+            lines.append(f"      - '{path_filter}'")
 
     lines.extend([
         '  workflow_dispatch: {}',
@@ -249,7 +294,15 @@ def main() -> int:
     try:
         validate_image_slug(image_slug)
         context_path = resolve_build_context(repo_root, build_context)
-        workflow_text = render_workflow(image_slug, build_context)
+        path_filters = managed_parent_paths(build_context)
+        if not has_managed_parent_workflow(build_context):
+            path_filters = unmanaged_parent_paths(build_context)
+
+        workflow_text = render_workflow(
+            image_slug,
+            build_context,
+            path_filters=path_filters,
+        )
         if args.dry_run:
             created = []
         else:
